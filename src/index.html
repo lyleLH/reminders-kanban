@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reminders Kanban</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js"></script>
+</head>
+<body>
+  <div class="titlebar">
+    <h1>Reminders Kanban</h1>
+    <button class="titlebar-btn" id="settings-toggle" title="设置"><i class="ph ph-gear-six"></i></button>
+  </div>
+
+  <!-- 看板视图 -->
+  <div id="kanban-view">
+    <div id="projects"></div>
+    <div id="status"></div>
+    <div class="board-wrapper">
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <!-- 设置视图 -->
+  <div id="settings-view" style="display:none">
+    <div class="settings-page">
+      <div class="settings-header">
+        <h2><i class="ph ph-gear-six"></i> 设置</h2>
+      </div>
+      <div class="settings-sections">
+
+        <div class="settings-section">
+          <h3>外观</h3>
+          <div class="settings-item">
+            <div class="settings-item-label">
+              <span>界面缩放</span>
+              <span class="settings-item-desc">调整所有字体和控件大小</span>
+            </div>
+            <div class="settings-control">
+              <button class="size-btn" data-action="decrease"><i class="ph ph-minus"></i></button>
+              <span id="scale-value">100%</span>
+              <button class="size-btn" data-action="increase"><i class="ph ph-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>看板</h3>
+          <div class="settings-item">
+            <div class="settings-item-label">
+              <span>轮询间隔</span>
+              <span class="settings-item-desc">从 Reminders 同步数据的频率</span>
+            </div>
+            <select class="settings-select" id="poll-interval">
+              <option value="2000">2 秒</option>
+              <option value="3000" selected>3 秒</option>
+              <option value="5000">5 秒</option>
+              <option value="10000">10 秒</option>
+              <option value="30000">30 秒</option>
+            </select>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-label">
+              <span>已完成任务</span>
+              <span class="settings-item-desc">在已完成列显示最近多少天的任务</span>
+            </div>
+            <select class="settings-select" id="completed-days">
+              <option value="7">7 天</option>
+              <option value="30" selected>30 天</option>
+              <option value="90">90 天</option>
+              <option value="0">不显示</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>列表管理</h3>
+          <div class="settings-item">
+            <div class="settings-item-label">
+              <span>显示的列表</span>
+              <span class="settings-item-desc">关闭的列表不会出现在看板中</span>
+            </div>
+          </div>
+          <div id="list-toggles"></div>
+        </div>
+
+        <div class="settings-section">
+          <h3>关于</h3>
+          <div class="settings-item">
+            <div class="settings-item-label">
+              <span>Reminders Kanban</span>
+              <span class="settings-item-desc">v0.1.0 · Tauri + EventKit</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

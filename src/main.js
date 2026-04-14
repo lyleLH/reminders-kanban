@@ -15,7 +15,7 @@ const settings = {
     pollInterval: parseInt(localStorage.getItem('poll-interval') || '3000'),
     completedDays: parseInt(localStorage.getItem('completed-days') || '30'),
     hiddenLists: JSON.parse(localStorage.getItem('hidden-lists') || '[]'),
-    listEmojis: JSON.parse(localStorage.getItem('list-emojis') || '{}'),
+    theme: localStorage.getItem('ui-theme') || 'shadcn',
 };
 
 function saveSetting(key, value) {
@@ -32,8 +32,16 @@ function applyScale() {
 
 let settingsOpen = false;
 
+function applyTheme() {
+    document.documentElement.setAttribute('data-theme', settings.theme);
+    document.querySelectorAll('.theme-opt').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === settings.theme);
+    });
+}
+
 function initSettings() {
     applyScale();
+    applyTheme();
 
     // 视图切换
     document.getElementById('settings-toggle')?.addEventListener('click', () => {
@@ -41,6 +49,15 @@ function initSettings() {
         document.getElementById('kanban-view').style.display = settingsOpen ? 'none' : '';
         document.getElementById('settings-view').style.display = settingsOpen ? '' : 'none';
         document.getElementById('settings-toggle').classList.toggle('active', settingsOpen);
+    });
+
+    // 主题切换
+    document.querySelectorAll('.theme-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+            settings.theme = btn.dataset.theme;
+            localStorage.setItem('ui-theme', settings.theme);
+            applyTheme();
+        });
     });
 
     // 缩放按钮
@@ -75,6 +92,23 @@ function initSettings() {
 }
 
 let listPicker = null;
+let listPickerClosedAt = 0;
+
+// 从列表名拆分开头的 emoji 和纯名字
+// "🤣 Moe Card" → { emoji: "🤣", name: "Moe Card" }
+// "Moe Card" → { emoji: null, name: "Moe Card" }
+function splitListName(fullName) {
+    const seg = [...new Intl.Segmenter('en', { granularity: 'grapheme' }).segment(fullName)];
+    if (seg.length === 0) return { emoji: null, name: fullName };
+    const first = seg[0].segment;
+    // 检测第一个 grapheme 是否是 emoji（含修饰符、ZWJ 序列等）
+    const emojiRe = /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u;
+    if (emojiRe.test(first)) {
+        const rest = fullName.slice(first.length).replace(/^ /, '');
+        return { emoji: first, name: rest };
+    }
+    return { emoji: null, name: fullName };
+}
 
 // ── 子任务解析（notes 里 `- [ ]` / `- [x]` 格式）──
 function parseSubtasks(notes) {
@@ -151,9 +185,10 @@ function renderListToggles() {
         const visible = !settings.hiddenLists.includes(l.name);
         const item = document.createElement('div');
         item.className = 'settings-item list-toggle-item';
-        const dot = l.color ? `<span style="width:8px;height:8px;border-radius:50%;background:${l.color};display:inline-block"></span>` : '';
+        const { emoji: le, name: ln } = splitListName(l.name);
+        const dot = le || (l.color ? `<span style="width:8px;height:8px;border-radius:50%;background:${l.color};display:inline-block"></span>` : '');
         item.innerHTML = `
-            <div class="settings-item-label"><span>${dot} ${l.name}</span></div>
+            <div class="settings-item-label"><span>${dot} ${ln}</span></div>
             <button class="list-delete-btn" title="删除列表"><i class="ph ph-trash"></i></button>
             <label class="toggle">
                 <input type="checkbox" ${visible ? 'checked' : ''} />
@@ -354,7 +389,7 @@ function showDetail(task) {
                 <button class="detail-close"><i class="ph ph-x"></i></button>
             </div>
             <div class="detail-body">
-                <div class="detail-meta"><i class="ph ph-folder-simple"></i> ${task.list} &middot; ${task.status}</div>
+                <div class="detail-meta"><i class="ph ph-folder-simple"></i> ${splitListName(task.list).name} &middot; ${task.status}</div>
                 <div>
                     <div class="detail-label">子任务</div>
                     <div class="subtasks" id="subtask-list"></div>
@@ -362,15 +397,13 @@ function showDetail(task) {
                         <input class="subtask-input" placeholder="添加子任务，回车确认" />
                     </div>
                 </div>
-                <div class="detail-row">
-                    <div class="detail-field">
-                        <div class="detail-label">优先级</div>
-                        <select class="detail-select" id="detail-priority">
-                            <option value="0" ${(!task.priorityValue || task.priorityValue === 0) ? 'selected' : ''}>无</option>
-                            <option value="9" ${task.priorityValue === 9 ? 'selected' : ''}>低</option>
-                            <option value="5" ${task.priorityValue === 5 ? 'selected' : ''}>中</option>
-                            <option value="1" ${task.priorityValue === 1 ? 'selected' : ''}>高（旗标）</option>
-                        </select>
+                <div>
+                    <div class="detail-label">优先级</div>
+                    <div class="priority-group" id="detail-priority">
+                        <button class="priority-btn ${(!task.priorityValue || task.priorityValue === 0) ? 'active' : ''}" data-value="0">无</button>
+                        <button class="priority-btn pri-low ${task.priorityValue === 9 ? 'active' : ''}" data-value="9"><span class="priority-dot dot-blue"></span> 低</button>
+                        <button class="priority-btn pri-medium ${task.priorityValue === 5 ? 'active' : ''}" data-value="5"><span class="priority-dot dot-orange"></span> 中</button>
+                        <button class="priority-btn pri-high ${task.priorityValue === 1 ? 'active' : ''}" data-value="1"><span class="priority-dot dot-red"></span> 高</button>
                     </div>
                 </div>
                 <div>
@@ -402,6 +435,11 @@ function showDetail(task) {
     let picker = null;
     emojiBtn.addEventListener('click', () => {
         if (picker) { picker.close(); picker = null; return; }
+        const body = overlay.querySelector('.detail-body');
+        const footer = overlay.querySelector('.detail-footer');
+        // 收起 body 和 footer 给 picker 腾空间
+        body.style.display = 'none';
+        footer.style.display = 'none';
         picker = new TwemojiPicker({
             anchor: emojiBtn,
             onSelect: (emoji) => {
@@ -409,9 +447,21 @@ function showDetail(task) {
                 emojiBtn.textContent = emoji;
                 parseTwemoji(emojiBtn);
             },
-            onClose: () => { picker = null; },
+            onClose: () => {
+                picker = null;
+                body.style.display = '';
+                footer.style.display = '';
+            },
         });
         picker.open();
+    });
+
+    // 优先级按钮组
+    overlay.querySelectorAll('.priority-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            overlay.querySelectorAll('.priority-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
     });
 
     const { subtasks, rest } = parseSubtasks(task.notes);
@@ -425,10 +475,33 @@ function showDetail(task) {
         subtasks.forEach((s, i) => {
             const row = document.createElement('label');
             row.className = 'subtask-row' + (s.done ? ' done' : '');
-            row.innerHTML = `<input type="checkbox" ${s.done ? 'checked' : ''} /><span>${s.text}</span><button class="subtask-detach" title="拆为独立任务"><i class="ph ph-arrow-square-out"></i></button>`;
-            row.querySelector('input').addEventListener('change', e => {
+            row.innerHTML = `<input type="checkbox" ${s.done ? 'checked' : ''} /><span class="subtask-text">${s.text}</span><button class="subtask-detach" title="拆为独立任务"><i class="ph ph-arrow-square-out"></i></button>`;
+            row.querySelector('input[type="checkbox"]').addEventListener('change', e => {
                 subtasks[i].done = e.target.checked;
                 renderSubtasks();
+            });
+            // 点击文字 → 编辑
+            row.querySelector('.subtask-text').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const span = e.currentTarget;
+                const input = document.createElement('input');
+                input.className = 'subtask-edit';
+                input.value = subtasks[i].text;
+                span.replaceWith(input);
+                input.focus();
+                input.select();
+                const commit = () => {
+                    const val = input.value.trim();
+                    if (val) subtasks[i].text = val;
+                    else subtasks.splice(i, 1);
+                    renderSubtasks();
+                };
+                input.addEventListener('blur', commit);
+                input.addEventListener('keydown', ev => {
+                    if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+                    if (ev.key === 'Escape') { renderSubtasks(); }
+                });
             });
             row.querySelector('.subtask-detach').addEventListener('click', async (e) => {
                 e.stopPropagation();
@@ -458,7 +531,8 @@ function showDetail(task) {
         const restNotes = overlay.querySelector('.detail-notes').value;
         const newNotes = serializeSubtasks(subtasks, restNotes);
         const newUrl = overlay.querySelector('.detail-url').value.trim();
-        const newPriority = parseInt(overlay.querySelector('#detail-priority').value);
+        const activePriBtn = overlay.querySelector('.priority-btn.active');
+        const newPriority = activePriBtn ? parseInt(activePriBtn.dataset.value) : 0;
         try {
             if (newPriority !== (task.priorityValue || 0))
                 await invoke('set_priority', { id: task.id, value: newPriority });
@@ -560,20 +634,21 @@ function renderListSelector() {
         if (currentList === l.name) btn.classList.add('active');
         if (l.color) btn.style.setProperty('--list-color', l.color);
 
-        const listEmoji = settings.listEmojis[l.name];
+        const { emoji: listEmoji, name: displayName } = splitListName(l.name);
         const iconHtml = listEmoji
             ? `<span class="tab-icon has-emoji">${listEmoji}</span>`
             : l.color
                 ? `<span class="tab-icon tab-dot" style="background:${l.color}"></span>`
                 : `<span class="tab-icon"><i class="ph ph-kanban"></i></span>`;
 
-        btn.innerHTML = `${iconHtml}<span class="tab-label">${l.name}</span>`;
+        btn.innerHTML = `${iconHtml}<span class="tab-label">${displayName}</span>`;
 
         btn.addEventListener('click', () => selectList(l.name));
 
-        // 双击 active tab → 原地 inline rename
-        btn.addEventListener('dblclick', (e) => {
+        // 双击 tab 文字 → inline rename（不监听 icon 区域）
+        btn.querySelector('.tab-label').addEventListener('dblclick', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (currentList !== l.name) return;
             startInlineRename(btn, l.name);
         });
@@ -600,28 +675,26 @@ function renderListSelector() {
 function startInlineRename(btn, listName) {
     const label = btn.querySelector('.tab-label');
     if (!label) return;
+    const { emoji: existingEmoji, name: pureName } = splitListName(listName);
     const input = document.createElement('input');
     input.className = 'tab-rename-input';
-    input.value = listName;
+    input.value = pureName; // 只编辑纯名字部分，不含 emoji
     label.replaceWith(input);
     input.focus();
     input.select();
 
     async function commit() {
-        const newName = input.value.trim();
-        if (!newName || newName === listName) {
+        const newPureName = input.value.trim();
+        if (!newPureName || newPureName === pureName) {
             renderListSelector(); return;
         }
+        // 拼回 emoji 前缀
+        const newFullName = existingEmoji ? `${existingEmoji} ${newPureName}` : newPureName;
         try {
-            await invoke('rename_list', { oldName: listName, newName });
-            if (settings.listEmojis[listName]) {
-                settings.listEmojis[newName] = settings.listEmojis[listName];
-                delete settings.listEmojis[listName];
-                localStorage.setItem('list-emojis', JSON.stringify(settings.listEmojis));
-            }
-            currentList = newName;
+            await invoke('rename_list', { oldName: listName, newName: newFullName });
+            currentList = newFullName;
             await loadLists();
-            selectList(newName);
+            selectList(newFullName);
         } catch (e) {
             console.error('重命名失败:', e);
             renderListSelector();
@@ -640,12 +713,17 @@ function openListEmojiPicker(anchor, listName) {
     listPicker = new TwemojiPicker({
         anchor,
         popover: true,
-        onSelect: (emoji) => {
-            settings.listEmojis[listName] = emoji;
-            localStorage.setItem('list-emojis', JSON.stringify(settings.listEmojis));
-            renderListSelector();
+        onSelect: async (emoji) => {
+            const { name: pureName } = splitListName(listName);
+            const newName = `${emoji} ${pureName}`;
+            try {
+                await invoke('rename_list', { oldName: listName, newName });
+                if (currentList === listName) currentList = newName;
+                await loadLists();
+                if (currentList) selectList(currentList);
+            } catch (e) { console.error('设置 list emoji 失败:', e); }
         },
-        onClose: () => { listPicker = null; },
+        onClose: () => { listPicker = null; listPickerClosedAt = Date.now(); },
     });
     listPicker.open();
 }
@@ -684,10 +762,12 @@ function render(force = false) {
             if (task.completed) card.classList.add('completed');
             let badges = '';
             if (task.flagged) {
-                badges += `<span class="badge badge-orange"><i class="ph-fill ph-flag-pennant"></i></span>`;
+                badges += `<span class="badge badge-red"><span class="priority-dot dot-red"></span> 高</span>`;
             } else if (task.priority) {
-                const cls = task.priority === 'high' ? 'badge-red' : task.priority === 'medium' ? 'badge-orange' : 'badge-default';
-                badges += `<span class="badge ${cls}"><i class="ph ph-flag"></i> ${task.priority}</span>`;
+                const dotCls = task.priority === 'high' ? 'dot-red' : task.priority === 'medium' ? 'dot-orange' : 'dot-blue';
+                const label = task.priority === 'high' ? '高' : task.priority === 'medium' ? '中' : '低';
+                const badgeCls = task.priority === 'high' ? 'badge-red' : task.priority === 'medium' ? 'badge-orange' : 'badge-default';
+                badges += `<span class="badge ${badgeCls}"><span class="priority-dot ${dotCls}"></span> ${label}</span>`;
             }
             if (task.dueDate) {
                 const isOverdue = new Date(task.dueDate) < new Date();

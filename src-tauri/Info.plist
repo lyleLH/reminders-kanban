@@ -4,5 +4,9 @@
 <dict>
     <key>NSAppleEventsUsageDescription</key>
     <string>Reminders Kanban 需要访问提醒事项 App 来读取和管理你的提醒。</string>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>Reminders Kanban 需要完整访问你的提醒事项来显示和管理看板。</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>Reminders Kanban 需要访问你的提醒事项。</string>
 </dict>
 </plist>

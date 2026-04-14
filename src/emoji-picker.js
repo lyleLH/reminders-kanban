@@ -158,6 +158,10 @@ export class TwemojiPicker {
     const el = this.el;
     this.el = null;
     el.remove();
+    // 吃掉紧随 mousedown 之后的 click，防止误触到下面的按钮
+    const swallow = (e) => { e.stopPropagation(); e.preventDefault(); };
+    document.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 100);
     this.onClose();
   }
 

@@ -37,6 +37,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "externalBin": [
+      "swift-helper/reminders-helper"
+    ],
     "macOS": {
       "entitlements": "entitlements.plist",
       "minimumSystemVersion": "13.0"

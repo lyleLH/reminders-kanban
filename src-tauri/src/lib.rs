@@ -76,17 +76,19 @@ impl Drop for HelperProcess {
 }
 
 fn helper_path() -> PathBuf {
+    // Dev mode: binary is in swift-helper/ next to Cargo.toml
     let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("swift-helper")
         .join("reminders-helper");
     if dev_path.exists() {
         return dev_path;
     }
+    // Release mode: Tauri externalBin puts sidecar next to the main binary
     if let Ok(exe) = std::env::current_exe() {
-        if let Some(resources) = exe.parent().and_then(|p| p.parent()).map(|p| p.join("Resources")) {
-            let bundle_path = resources.join("reminders-helper");
-            if bundle_path.exists() {
-                return bundle_path;
+        if let Some(dir) = exe.parent() {
+            let sidecar = dir.join("reminders-helper");
+            if sidecar.exists() {
+                return sidecar;
             }
         }
     }

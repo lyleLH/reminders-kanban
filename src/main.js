@@ -281,23 +281,26 @@ function onMouseMove(e) {
         dragState.ghostEl = ghost;
         dragState.el.classList.add('dragging');
     }
+    const zoom = parseFloat(document.documentElement.style.zoom) || 1;
     if (dragState.ghostEl) {
-        dragState.ghostEl.style.left = (e.clientX - 20) + 'px';
-        dragState.ghostEl.style.top = (e.clientY - 15) + 'px';
+        dragState.ghostEl.style.left = (e.clientX / zoom - 20) + 'px';
+        dragState.ghostEl.style.top = (e.clientY / zoom - 15) + 'px';
     }
     // 检测 drop 到卡片上（子任务）还是列上（改状态）
     let hoveredCard = null;
     document.querySelectorAll('.card').forEach(card => {
         if (card === dragState.el || card.classList.contains('ghost')) return;
         const r = card.getBoundingClientRect();
-        const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        const cx = e.clientX / zoom, cy = e.clientY / zoom;
+        const inside = cx >= r.left / zoom && cx <= r.right / zoom && cy >= r.top / zoom && cy <= r.bottom / zoom;
         card.classList.toggle('drop-target', inside);
         if (inside) hoveredCard = card;
     });
 
     document.querySelectorAll('.col').forEach(col => {
         const r = col.getBoundingClientRect();
-        const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        const cx = e.clientX / zoom, cy = e.clientY / zoom;
+        const inside = cx >= r.left / zoom && cx <= r.right / zoom && cy >= r.top / zoom && cy <= r.bottom / zoom;
         col.classList.toggle('drag-over', inside && !hoveredCard);
     });
 }

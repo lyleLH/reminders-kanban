@@ -154,11 +154,32 @@ function renderListToggles() {
         const dot = l.color ? `<span style="width:8px;height:8px;border-radius:50%;background:${l.color};display:inline-block"></span>` : '';
         item.innerHTML = `
             <div class="settings-item-label"><span>${dot} ${l.name}</span></div>
+            <button class="list-delete-btn" title="删除列表"><i class="ph ph-trash"></i></button>
             <label class="toggle">
                 <input type="checkbox" ${visible ? 'checked' : ''} />
                 <span class="toggle-slider"></span>
             </label>
         `;
+        // 删除列表（两次点击确认）
+        const delBtn = item.querySelector('.list-delete-btn');
+        let delConfirm = false;
+        delBtn.addEventListener('click', async () => {
+            if (!delConfirm) {
+                delConfirm = true;
+                delBtn.innerHTML = '<i class="ph ph-trash"></i> 确认?';
+                delBtn.classList.add('confirm');
+                setTimeout(() => { delConfirm = false; delBtn.innerHTML = '<i class="ph ph-trash"></i>'; delBtn.classList.remove('confirm'); }, 3000);
+                return;
+            }
+            try {
+                await invoke('delete_list', { name: l.name });
+                settings.hiddenLists = settings.hiddenLists.filter(n => n !== l.name);
+                localStorage.setItem('hidden-lists', JSON.stringify(settings.hiddenLists));
+                if (currentList === l.name) { currentList = null; }
+                await loadLists();
+                if (!currentList && lists.length > 0) selectList(lists[0].name);
+            } catch (e) { console.error('删除列表失败:', e); }
+        });
         item.querySelector('input').addEventListener('change', (e) => {
             if (e.target.checked) {
                 settings.hiddenLists = settings.hiddenLists.filter(n => n !== l.name);
@@ -308,7 +329,11 @@ async function addTask(title) {
     if (!title.trim() || !currentList) return;
     try {
         await invoke('add_reminder', { list: currentList, title: title.trim() });
-        await fetchReminders();
+        tasks = await invoke('get_reminders', { list: currentList });
+        render(true);
+        // 重新聚焦新增输入框
+        const newInput = document.querySelector('.add-input');
+        if (newInput) newInput.focus();
     } catch (e) {
         setStatus('<i class="ph ph-warning-circle"></i> 新增失败: ' + e, 'red');
     }

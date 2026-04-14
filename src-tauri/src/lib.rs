@@ -41,6 +41,9 @@ struct HelperProcess {
 
 impl HelperProcess {
     fn send(&mut self, cmd: &serde_json::Value) -> Result<serde_json::Value, String> {
+        let action = cmd.get("action").and_then(|v| v.as_str()).unwrap_or("?");
+        let t0 = std::time::Instant::now();
+
         let line = serde_json::to_string(cmd).map_err(|e| e.to_string())?;
         self.stdin
             .write_all(line.as_bytes())
@@ -54,6 +57,9 @@ impl HelperProcess {
         self.reader
             .read_line(&mut buf)
             .map_err(|e| format!("read from helper: {}", e))?;
+
+        let elapsed = t0.elapsed();
+        eprintln!("[helper] {} → {}ms ({}B)", action, elapsed.as_millis(), buf.len());
 
         if buf.is_empty() {
             return Err("helper process closed unexpectedly".into());
@@ -127,7 +133,13 @@ fn send_cmd(
     state: &tauri::State<'_, Mutex<HelperProcess>>,
     cmd: serde_json::Value,
 ) -> Result<serde_json::Value, String> {
+    let action = cmd.get("action").and_then(|v| v.as_str()).unwrap_or("?").to_string();
+    let lock_t = std::time::Instant::now();
     let mut helper = state.lock().map_err(|e| format!("lock: {}", e))?;
+    let lock_ms = lock_t.elapsed().as_millis();
+    if lock_ms > 5 {
+        eprintln!("[send_cmd] {} waited {}ms for lock", action, lock_ms);
+    }
     let result = helper.send(&cmd);
 
     // If helper died, try respawning once
@@ -236,6 +248,19 @@ fn create_list(
 }
 
 #[tauri::command]
+fn delete_list(
+    name: String,
+    state: tauri::State<'_, Mutex<HelperProcess>>,
+) -> Result<serde_json::Value, String> {
+    let val = send_cmd(
+        &state,
+        serde_json::json!({"action": "delete-list", "name": name}),
+    )?;
+    check_error(&val)?;
+    Ok(val)
+}
+
+#[tauri::command]
 fn rename_list(
     old_name: String,
     new_name: String,
@@ -292,6 +317,7 @@ pub fn run() {
             set_priority,
             delete_reminder,
             rename_list,
+            delete_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -252,6 +252,13 @@ func handleCommand(_ cmd: [String: Any]) -> Any {
         do { try store.remove(r, commit: true); return ["ok": true] }
         catch { return ["error": error.localizedDescription] }
 
+    case "delete-list":
+        guard let name = cmd["name"] as? String,
+              let cal = store.calendars(for: .reminder).first(where: { $0.title == name })
+        else { return ["error": "not found"] }
+        do { try store.removeCalendar(cal, commit: true); return ["ok": true] }
+        catch { return ["error": error.localizedDescription] }
+
     case "create-list":
         guard let name = cmd["name"] as? String else { return ["error": "no name"] }
         let newCal = EKCalendar(for: .reminder, eventStore: store)

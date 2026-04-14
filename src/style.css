@@ -161,6 +161,17 @@ body {
 .toggle input:checked + .toggle-slider { background: var(--primary); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
 .list-toggle-item { padding: 8px 16px; }
+.list-delete-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 8px; border: none; border-radius: 6px;
+  background: none; cursor: pointer;
+  color: var(--muted-fg); font-family: var(--font);
+  font-size: 12px; font-weight: 700;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.list-delete-btn:hover { color: hsl(0 72% 51%); background: hsl(0 72% 51% / 0.08); }
+.list-delete-btn.confirm { color: #fff; background: hsl(0 72% 51%); }
+.list-delete-btn i { font-size: 14px; }
 .list-toggle-item .settings-item-label span:first-child {
   display: flex; align-items: center; gap: 6px;
   font-weight: 600; font-size: 13px;

@@ -56,7 +56,7 @@ body {
   -webkit-app-region: drag;
   display: flex; align-items: flex-end;
   justify-content: center;
-  padding: 28px 20px 8px;
+  padding: 28px 20px 6px;
   background: var(--background);
   border-bottom: 1px solid var(--border);
 }
@@ -237,13 +237,13 @@ body {
 
 #status {
   font-size: 12px; font-weight: 600; color: var(--muted-fg);
-  padding: 10px 20px 4px;
+  padding: 0;
   display: flex; align-items: center; justify-content: center; gap: 5px;
-  min-height: 10px;
+  min-height: 0;
 }
 
 /* ── Board ───────────────────────────────────────── */
-.board-wrapper { padding: 12px 20px 24px; max-width: 960px; margin: 0 auto; }
+.board-wrapper { padding: 8px 20px 24px; max-width: 960px; margin: 0 auto; }
 #board {
   display: flex; gap: 14px; align-items: flex-start;
   justify-content: center;
@@ -773,7 +773,8 @@ img.emoji {
 [data-theme="glass"] #projects {
   background: transparent;
   border-bottom: none;
-  padding: 4px 20px;
+  padding: 10px 20px 4px;
+  gap: 8px;
 }
 [data-theme="glass"] .project-btn {
   border-bottom: none; border-radius: 10px;
@@ -784,9 +785,9 @@ img.emoji {
   background: rgba(255,255,255,0.25);
 }
 [data-theme="glass"] .project-btn.active {
-  background: var(--card);
+  background: var(--background);
   backdrop-filter: blur(var(--glass-blur)); -webkit-backdrop-filter: blur(var(--glass-blur));
-  box-shadow: var(--glass-shadow);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
   border: none;
 }
 

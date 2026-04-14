@@ -13,6 +13,22 @@
 | 圆角 | `10px` | `14px` |
 | 字体 | Nunito | SF Pro (system-ui) |
 
+## Glass 主题元素分类
+
+| 元素 | 背景 | 效果 | 说明 |
+|------|------|------|------|
+| **Titlebar** | `var(--background)` | `backdrop-filter: blur` + 阴影 | 毛玻璃 |
+| **Active Tab** | `var(--background)` | `backdrop-filter: blur` + `var(--glass-shadow)` + `var(--glass-highlight)` | 毛玻璃，与列保持一致 |
+| **列 (Column)** | `var(--background)` | `backdrop-filter: blur` + `var(--glass-shadow)` + `var(--glass-highlight)` | 毛玻璃 |
+| **卡片 (Card)** | 实色 `hsl(0 0% 100%)` / 暗色 `hsl(230 6% 16%)` | 仅 `box-shadow`，无 blur | **不用毛玻璃** |
+| **详情面板** | 实色 `hsl(0 0% 100%)` / 暗色 `hsl(230 6% 14%)` | 仅大号阴影，无 blur | **不用毛玻璃** |
+| **输入框** | 灰色填充 `hsl(220 10% 95%)` / 暗色 `hsl(230 6% 20%)` | 无边框 | 用 `!important` 强制 |
+| **设置页 section** | `var(--background)` | `backdrop-filter: blur` + 阴影 + 高光 | 毛玻璃 |
+| **Emoji Picker (popover)** | `var(--background)` | `backdrop-filter: blur(40px) saturate(1.4)` | 毛玻璃 |
+| **Badge / Count** | `rgba(255,255,255,0.3)` / 暗色 `rgba(255,255,255,0.06)` | `backdrop-filter: blur(8px)` | 轻度毛玻璃 |
+
+**关键规则**：所有毛玻璃元素必须使用相同的 `var(--background)` + `var(--glass-shadow)` + `var(--glass-highlight)` 组合，确保视觉一致性。不同透明度 = 不同质感 = 视觉混乱。
+
 ## 新增组件必须遵守的规则
 
 1. **只用 CSS 变量**：`var(--border)`, `var(--card)`, `var(--muted)` 等，不写死颜色值
